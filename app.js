@@ -1,17 +1,13 @@
 // dependencies
 var fs = require('fs');
-var http = require('http');
 var express = require('express');
 var routes = require('./routes');
 var path = require('path');
+var app = express();
+var config = require('./oauth.js');
 var mongoose = require('mongoose');
-var config = require('./oauth.js')
-var passport = require('passport')
-var FacebookStrategy = require('passport-facebook').Strategy;
-var TwitterStrategy = require('passport-twitter').Strategy;
-var GithubStrategy = require('passport-github').Strategy;
+var passport = require('passport');
 var InstagramStrategy = require('passport-instagram').Strategy;
-var GoogleStrategy = require('passport-google').Strategy;
 
 // serialize and deserialize
 passport.serializeUser(function(user, done) {
@@ -33,6 +29,7 @@ function(accessToken, refreshToken, profile, done) {
  });
 }
 ));
+
 
 var app = express();
 
@@ -57,19 +54,16 @@ app.get('/account', ensureAuthenticated, function(req, res){
 res.render('account', { user: req.user });
 });
 
-app.get('/', function(req, res){
-res.render('login', { user: req.user });
-});
-
-app.get('/auth/facebook',
-passport.authenticate('facebook'),
+app.get('/auth/instagram',
+passport.authenticate('instagram'),
 function(req, res){
 });
-app.get('/auth/facebook/callback',
-passport.authenticate('facebook', { failureRedirect: '/' }),
+app.get('/auth/instagram/callback',
+passport.authenticate('instagram', { failureRedirect: '/' }),
 function(req, res) {
  res.redirect('/account');
 });
+
 app.get('/logout', function(req, res){
 req.logout();
 res.redirect('/');
