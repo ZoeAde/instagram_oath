@@ -12,9 +12,12 @@ block content
           a(href="/") Go home
           br
           a(href="/ping") Ping
-
+          a(href="/auth/facebook")
+          a(href="/auth/instagram")
   script
     $("#menu-toggle").click(function(e) {
       e.preventDefault();
       $("#wrapper").toggleClass("active");
     });
+
+

@@ -5,40 +5,81 @@ var express = require('express');
 var routes = require('./routes');
 var path = require('path');
 var mongoose = require('mongoose');
+var config = require('./oauth.js')
+var passport = require('passport')
+var FacebookStrategy = require('passport-facebook').Strategy;
+var TwitterStrategy = require('passport-twitter').Strategy;
+var GithubStrategy = require('passport-github').Strategy;
+var InstagramStrategy = require('passport-instagram').Strategy;
+var GoogleStrategy = require('passport-google').Strategy;
 
-// global config
+// serialize and deserialize
+passport.serializeUser(function(user, done) {
+done(null, user);
+});
+passport.deserializeUser(function(obj, done) {
+done(null, obj);
+});
+
+// config
+passport.use(new InstagramStrategy({
+ clientID: config.instagram.clientID,
+ clientSecret: config.instagram.clientSecret,
+ callbackURL: config.instagram.callbackURL
+},
+function(accessToken, refreshToken, profile, done) {
+ process.nextTick(function () {
+   return done(null, profile);
+ });
+}
+));
+
 var app = express();
-app.set('port', process.env.PORT || 1337);
+
+app.configure(function() {
 app.set('views', __dirname + '/views');
 app.set('view engine', 'jade');
-app.use(express.favicon());
+app.use(express.logger());
+app.use(express.cookieParser());
 app.use(express.bodyParser());
 app.use(express.methodOverride());
+app.use(express.session({ secret: 'my_precious' }));
+app.use(passport.initialize());
+app.use(passport.session());
 app.use(app.router);
-app.use(express.static(path.join(__dirname, 'public')));
-
-// env config
-app.configure('development', function(){
-    app.use(express.errorHandler({ dumpExceptions: true, showStack: true }));
+app.use(express.static(__dirname + '/public'));
 });
-
-app.configure('production', function(){
-    app.use(express.errorHandler());
-});
-
-// mongo config
-var MONGOLAB_URI= "add_your_mongolab_uri_here"
-var mongo = process.env.MONGOLAB_URI || 'mongodb://localhost/node-bootstrap3-template'
-mongoose.connect(mongo);
-
-// mongo model
-// var Model_Name = require('add_your_models_here');
 
 // routes
 app.get('/', routes.index);
 app.get('/ping', routes.ping);
-
-// run server
-app.listen(app.get('port'), function(){
-  console.log('\nExpress server listening on port ' + app.get('port'));
+app.get('/account', ensureAuthenticated, function(req, res){
+res.render('account', { user: req.user });
 });
+
+app.get('/', function(req, res){
+res.render('login', { user: req.user });
+});
+
+app.get('/auth/facebook',
+passport.authenticate('facebook'),
+function(req, res){
+});
+app.get('/auth/facebook/callback',
+passport.authenticate('facebook', { failureRedirect: '/' }),
+function(req, res) {
+ res.redirect('/account');
+});
+app.get('/logout', function(req, res){
+req.logout();
+res.redirect('/');
+});
+
+// port
+app.listen(1337);
+
+// test authentication
+function ensureAuthenticated(req, res, next) {
+if (req.isAuthenticated()) { return next(); }
+res.redirect('/');
+}
